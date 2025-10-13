@@ -1,7 +1,7 @@
 import usuarioController from "./usuarios/usuario.controller.js";
 import produtoController from "./produtos/produto.controller.js";
 
-import { Router } from "express";
+import { Router} from "express";
 import carrinhoController from "./carrinho/carrinho.controller.js";
 
 const rotas = Router();

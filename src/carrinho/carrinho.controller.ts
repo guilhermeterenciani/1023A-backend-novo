@@ -99,10 +99,78 @@ class CarrinhoController {
         )
         res.status(200).json(carrinho);
     }
-    removerItem(req:Request, res:Response) {}
-    //atualizarQuantidade
-    //listar
-    //remover                -> Remover o carrinho todo
+    async removerItem(req:Request, res:Response) {
+        const { produtoId , usuarioId } = req.body;
+        //Faça o removerItem
+        //Do melhor jeito
+
+        const carrinho = await db.collection<Carrinho>("carrinhos").findOne({usuarioId: usuarioId});
+        if(!carrinho){
+            return res.status(404).json({mensagem: 'Carrinho não encontrado'});
+        }
+        const itemExistente = carrinho.itens.find(item => item.produtoId === produtoId);
+        if(!itemExistente){
+            return res.status(404).json({mensagem: 'Item não encontrado'});
+        }
+        const filtrados = carrinho.itens.filter(item => item.produtoId !== produtoId);
+        const total = filtrados.reduce((total, item) => total + item.precoUnitario * item.quantidade, 0);
+        const carrinhoAtualizado = {
+            usuarioId: carrinho.usuarioId,
+            itens: filtrados,
+            dataAtualizacao: new Date(),
+            total: total
+        }
+        await db.collection<Carrinho>("carrinhos").updateOne({usuarioId: usuarioId},
+            {$set: {
+                itens: carrinhoAtualizado.itens, 
+                total: carrinhoAtualizado.total, 
+                dataAtualizacao: carrinhoAtualizado.dataAtualizacao
+            }
+            }
+        )
+        return res.status(200).json(carrinhoAtualizado);
+
+    }
+    async atualizarQuantidade(req:Request, res:Response) {
+        const { produtoId , usuarioId, quantidade  } = req.body;
+        const carrinho = await db.collection<Carrinho>("carrinhos").findOne({usuarioId: usuarioId});
+        if(!carrinho){
+            return res.status(404).json({mensagem: 'Carrinho não encontrado'});
+        }
+        const itemExistente = carrinho.itens.find(item => item.produtoId === produtoId);
+        if(!itemExistente){
+            return res.status(404).json({mensagem: 'Item não encontrado'});
+        }
+        itemExistente.quantidade = quantidade;
+        carrinho.total = carrinho.itens.reduce((total, item) => total + item.precoUnitario * item.quantidade, 0);
+        carrinho.dataAtualizacao = new Date();
+        await db.collection<Carrinho>("carrinhos").updateOne({usuarioId: usuarioId},
+            {$set: {
+                itens: carrinho.itens, 
+                total: carrinho.total, 
+                dataAtualizacao: carrinho.dataAtualizacao
+            }
+            }
+        )
+        return res.status(200).json(carrinho);
+    }
+    async listar(req:Request, res:Response) {
+        const { usuarioId } = req.body;
+        const carrinho = await db.collection<Carrinho>("carrinhos").findOne({usuarioId: usuarioId});
+        if(!carrinho){
+            return res.status(404).json({mensagem: 'Carrinho não encontrado'});
+        }
+        return res.status(200).json(carrinho);
+    }
+    async remover(req:Request, res:Response) {
+        const { usuarioId } = req.body;
+        const carrinho = await db.collection<Carrinho>("carrinhos").findOne({usuarioId: usuarioId});
+        if(!carrinho){
+            return res.status(404).json({mensagem: 'Carrinho não encontrado'});
+        }
+        await db.collection<Carrinho>("carrinhos").deleteOne({usuarioId: usuarioId});
+        return res.status(200).json({mensagem: 'Carrinho removido com sucesso'});
+    }
 
 }
 export default new CarrinhoController();
